@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Indigenous Groups Map</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+        #map {
+            flex: 3;
+            height: 100%;
+        }
+        .sidebar {
+            flex: 1;
+            padding: 20px;
+            background-color: #f5f5f5;
+            overflow-y: auto;
+            max-width: 300px;
+        }
+        h1 {
+            margin-top: 0;
+            color: #333;
+            font-size: 24px;
+        }
+        .group-list {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+        .group-item {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .group-item:hover {
+            background-color: #e0e0e0;
+        }
+        .popup-content {
+            max-width: 300px;
+        }
+        .popup-content h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .popup-content p {
+            margin-top: 5px;
+            line-height: 1.5;
+        }
+        .legend {
+            padding: 6px 8px;
+            background: white;
+            background: rgba(255, 255, 255, 0.8);
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+            border-radius: 5px;
+            line-height: 24px;
+            color: #555;
+        }
+        .legend i {
+            width: 18px;
+            height: 18px;
+            float: left;
+            margin-right: 8px;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h1>Indigenous Groups</h1>
+            <p>Click on a group below or marker on the map to learn more about indigenous communities and their challenges.</p>
+            <ul class="group-list" id="groupList"></ul>
+        </div>
+        <div id="map"></div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+    <script>
+        // Initialize the map centered on the Philippines
+        const map = L.map('map').setView([12.8797, 121.7740], 6);
+
+        // Add OpenStreetMap tile layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            maxZoom: 18
+        }).addTo(map);
+
+        // Define indigenous groups data
+        const indigenousGroups = [
+            {
+                name: "Aeta",
+                country: "Philippines",
+                location: [15.1372, 120.3471], // Central Luzon
+                population: "Approximately 25,000-30,000",
+                challenges: "Deforestation, land displacement due to development projects, limited access to education and healthcare, discrimination.",
+                description: "The Aeta (also called Agta) are among the earliest known inhabitants of the Philippines, believed to have arrived through land bridges that connected the Philippines to mainland Asia thousands of years ago. They are primarily hunter-gatherers who live in mountainous areas."
+            },
+            {
+                name: "Ifugao",
+                country: "Philippines",
+                location: [16.8409, 121.1700], // Ifugao Province
+                population: "Approximately 180,000",
+                challenges: "Tourism impact on traditional culture, climate change affecting rice terraces, out-migration of youth, economic pressures.",
+                description: "The Ifugao are known for creating the UNESCO World Heritage Banaue Rice Terraces, which were carved into the mountains of Ifugao over 2,000 years ago. They have a complex culture with rich traditions related to rice cultivation."
+            },
+            {
+                name: "Lumad",
+                country: "Philippines",
+                location: [7.1907, 125.4553], // Mindanao
+                population: "Approximately 13-17 million across various groups",
+                challenges: "Armed conflict in ancestral domains, large-scale mining operations, plantation expansion, militarization, human rights violations.",
+                description: "Lumad is a term for the non-Muslim indigenous peoples of Mindanao. They comprise about 18 ethnolinguistic groups including the Manobo, B'laan, Higaonon, Bukidnon, and Talaandig, among others."
+            },
+            {
+                name: "T'boli",
+                country: "Philippines",
+                location: [6.3428, 124.7890], // South Cotabato
+                population: "Approximately 100,000",
+                challenges: "Land grabbing, loss of ancestral domains, cultural assimilation, economic marginalization.",
+                description: "The T'boli are known for their intricate brass ornaments, beadwork, and t'nalak cloth weaving. They inhabit the highlands of South Cotabato in Mindanao and have a rich cultural heritage expressed through music, dance, and crafts."
+            },
+            {
+                name: "Badjao",
+                country: "Philippines",
+                location: [6.0515, 121.0100], // Sulu Archipelago
+                population: "Approximately 40,000",
+                challenges: "Displacement due to armed conflict, maritime border restrictions, loss of traditional fishing grounds, extreme poverty, limited citizenship recognition.",
+                description: "The Badjao (also known as Sama Dilaut) are historically nomadic sea dwellers known as 'Sea Gypsies.' They traditionally lived on boats and are excellent divers and fishermen. Many have been forced to settle on land due to various social and environmental pressures."
+            },
+            {
+                name: "Maori",
+                country: "New Zealand",
+                location: [-40.9006, 174.8860],
+                population: "Approximately 850,000",
+                challenges: "Land rights issues, language preservation, health and education disparities, economic inequalities.",
+                description: "The Maori are the indigenous Polynesian people of New Zealand (Aotearoa). They have a rich culture featuring distinctive art, haka performances, and complex social structures based around tribes (iwi) and extended family groups."
+            },
+            {
+                name: "Aboriginal Australians",
+                country: "Australia",
+                location: [-25.2744, 133.7751],
+                population: "Approximately 800,000",
+                challenges: "Historical dispossession, health and socioeconomic gaps, racism and discrimination, cultural preservation.",
+                description: "Aboriginal Australians comprise hundreds of distinct groups with different languages and traditions. They have one of the world's oldest continuous cultures, dating back at least 65,000 years, with rich storytelling traditions known as The Dreamtime."
+            },
+            {
+                name: "Karen",
+                country: "Myanmar/Thailand",
+                location: [19.0788, 97.9189],
+                population: "Approximately 5-7 million",
+                challenges: "Armed conflict, forced displacement, refugee status, human rights abuses, statelessness.",
+                description: "The Karen people are an ethnolinguistic group living primarily in southeastern Myanmar (Burma) and along the Thai-Myanmar border. Many have been displaced due to the world's longest ongoing civil war, with numerous Karen living in refugee camps in Thailand."
+            },
+            {
+                name: "Ainu",
+                country: "Japan",
+                location: [43.0621, 141.3544], // Hokkaido
+                population: "Approximately 25,000",
+                challenges: "Historical assimilation policies, discrimination, language extinction risk, cultural preservation.",
+                description: "The Ainu are the indigenous people of Hokkaido, northern Japan. They maintained a distinct culture with unique spiritual beliefs, oral folklore, and traditional hunting practices. The Ainu were only officially recognized as indigenous by the Japanese government in 2008."
+            },
+            {
+                name: "Hmong",
+                country: "China/Vietnam/Laos/Thailand",
+                location: [20.1414, 102.1991],
+                population: "Approximately 9-11 million across Asia",
+                challenges: "Political persecution, economic marginalization, loss of traditional farming lands, cultural preservation.",
+                description: "The Hmong are an ethnic group living across several countries in Southeast Asia. Many Hmong in Laos faced persecution following the Vietnam War due to their support for the United States, leading to large refugee populations resettling in countries like the USA."
+            }
+        ];
+
+        // Create custom markers
+        function createCustomMarker(color) {
+            return L.divIcon({
+                className: 'custom-marker',
+                html: `<svg width="20" height="20" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="10" fill="${color}" stroke="#fff" stroke-width="2" />
+                      </svg>`,
+                iconSize: [20, 20],
+                iconAnchor: [10, 10],
+                popupAnchor: [0, -10]
+            });
+        }
+
+        // Define color mapping by region
+        function getGroupColor(country) {
+            const colorMap = {
+                "Philippines": "#ff6b6b",
+                "New Zealand": "#48dbfb",
+                "Australia": "#ff9f43",
+                "Myanmar/Thailand": "#1dd1a1",
+                "Japan": "#5f27cd",
+                "China/Vietnam/Laos/Thailand": "#54a0ff"
+            };
+            return colorMap[country] || "#777";
+        }
+
+        // Create markers and populate sidebar
+        const groupList = document.getElementById('groupList');
+        const markers = {};
+        
+        indigenousGroups.forEach(group => {
+            // Create marker
+            const marker = L.marker(group.location, {
+                icon: createCustomMarker(getGroupColor(group.country))
+            }).addTo(map);
+            
+            // Create popup content
+            const popupContent = `
+                <div class="popup-content">
+                    <h3>${group.name}</h3>
+                    <p><strong>Country:</strong> ${group.country}</p>
+                    <p><strong>Population:</strong> ${group.population}</p>
+                    <p><strong>Challenges:</strong> ${group.challenges}</p>
+                    <p>${group.description}</p>
+                </div>
+            `;
+            
+            marker.bindPopup(popupContent);
+            markers[group.name] = marker;
+            
+            // Add to sidebar list
+            const listItem = document.createElement('li');
+            listItem.className = 'group-item';
+            listItem.innerHTML = `
+                <span style="font-weight: bold">${group.name}</span>
+                <br><span style="font-size: 0.9em">${group.country}</span>
+            `;
+            
+            listItem.addEventListener('click', () => {
+                map.setView(group.location, 8);
+                marker.openPopup();
+            });
+            
+            groupList.appendChild(listItem);
+        });
+
+        // Add legend
+        const legend = L.control({position: 'bottomright'});
+        legend.onAdd = function(map) {
+            const div = L.DomUtil.create('div', 'legend');
+            div.innerHTML = '<h4>Indigenous Groups by Region</h4>';
+            
+            const uniqueCountries = [...new Set(indigenousGroups.map(g => g.country))];
+            uniqueCountries.forEach(country => {
+                div.innerHTML += `
+                    <i style="background:${getGroupColor(country)}"></i> ${country}<br>
+                `;
+            });
+            
+            return div;
+        };
+        legend.addTo(map);
+    </script>
+</body>
+</html>
